@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:list_product/data/product.dart';
+import 'package:list_product/detail/product_detail.dart';
 import 'package:list_product/home/list_product.dart';
 
 void main() {
@@ -13,7 +15,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
       debugShowCheckedModeBanner: false,
-      home: const ListProduct(),
+      initialRoute: '/home',
+      routes: {
+        '/home': (context) => const ListProduct(),
+        '/detail': (context) {
+          final arguments = ModalRoute.of(context)?.settings.arguments;
+          if (arguments is Product) {
+            return ProductDetail(product: arguments);
+          } else {
+            return Container();
+          }
+        },
+      },
     );
   }
 }
