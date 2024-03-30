@@ -1,7 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:list_product/data/product.dart';
+import 'package:list_product/helpers/result_state.dart';
+import 'package:list_product/providers/get_products_provider.dart';
+import 'package:provider/provider.dart';
 
 class ListProduct extends StatelessWidget {
   const ListProduct({Key? key}) : super(key: key);
@@ -35,35 +36,40 @@ class ListProduct extends StatelessWidget {
   }
 
   Widget _listProduct(BuildContext context) {
-    return FutureBuilder(
-      future: _fetchProduct(context),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        } else {
-          final List<Product> data = snapshot.data!;
-          return Expanded(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: data.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  child: _itemProduct(context, data[index]),
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/detail',
-                      arguments: data[index],
-                    );
-                  },
-                );
-              },
-            ),
+    return Consumer<GetProductProvider>(builder: (context, provider, child) {
+      switch (provider.state) {
+        case ResultState.loading:
+          return const Center(
+            child: CircularProgressIndicator(),
           );
-        }
-      },
+        case ResultState.hasData:
+          return _buildProductList(provider.result.products ?? []);
+        case ResultState.noData:
+        case ResultState.error:
+          return Center(child: Text(provider.message));
+      }
+    });
+  }
+
+  Widget _buildProductList(List<Product> data) {
+    return Expanded(
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: data.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            child: _itemProduct(context, data[index]),
+            onTap: () {
+              // Assuming you have a DetailProduct widget to display details
+              Navigator.pushNamed(
+                context,
+                '/detail',
+                arguments: '${data[index].id}',
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -82,10 +88,10 @@ class ListProduct extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    data.thumbnail,
+                    data.thumbnail ?? '',
                     fit: BoxFit.fitHeight,
-                    height: 120,
-                    width: 160,
+                    height: 120, // Adjust the height as needed
+                    width: 160, // Adjust the width as needed
                   ),
                 ),
               ),
@@ -95,7 +101,7 @@ class ListProduct extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.title,
+                      data.title ?? '',
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
                       style: const TextStyle(
@@ -115,18 +121,5 @@ class ListProduct extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<List<Product>> _fetchProduct(BuildContext context) async {
-    final jsonString = await DefaultAssetBundle.of(context)
-        .loadString('assets/local_data.json');
-    final jsonResult = jsonDecode(jsonString);
-    final data = List<Product>.from(
-      jsonResult['products'].map(
-        (item) => Product.fromJson(item),
-      ),
-    );
-
-    return data;
   }
 }
