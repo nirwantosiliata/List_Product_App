@@ -14,9 +14,9 @@ class ApiService {
     'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
   };
 
-  Future<BaseProductResponse> getProduct() async {
-    final response =
-        await http.get(Uri.parse('$_baseUrl/products'), headers: headers);
+  Future<BaseProductResponse> getProduct({String title = ""}) async {
+    final response = await http
+        .get(Uri.parse('$_baseUrl/products/search?q=$title'), headers: headers);
 
     if (response.statusCode == 200) {
       return BaseProductResponse.fromJson(json.decode(response.body));

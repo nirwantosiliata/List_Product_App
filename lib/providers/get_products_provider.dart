@@ -13,25 +13,29 @@ class GetProductProvider extends ChangeNotifier {
   BaseProductResponse get result => _productsResult;
   ResultState get state => _state;
 
-  GetProductProvider({required this.apiService}) {
-    _fetchAllProducts();
+  GetProductProvider({required this.apiService, String title = ""}) {
+    _fetchAllProducts(title: title);
   }
 
-  Future<void> _fetchAllProducts() async {
+  Future<void> retryFetchProduct({String title = ""}) async {
+    await _fetchAllProducts(title: title);
+  }
+
+  Future<void> _fetchAllProducts({String title = ""}) async {
     try {
       _state = ResultState.loading;
       notifyListeners();
 
-      final result = await apiService.getProduct();
+      final result = await apiService.getProduct(title: title);
 
-      if (result.products != null && result.products!.isNotEmpty) {
-        _state = ResultState.hasData;
-        notifyListeners();
-        _productsResult = result;
-      } else {
+      if ((result.products ?? []).isEmpty) {
         _state = ResultState.noData;
         notifyListeners();
         _message = 'No result found';
+      } else {
+        _state = ResultState.hasData;
+        notifyListeners();
+        _productsResult = result;
       }
     } catch (e) {
       _state = ResultState.error;
